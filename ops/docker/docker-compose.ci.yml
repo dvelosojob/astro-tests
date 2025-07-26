@@ -3,7 +3,7 @@ services:
     build:
       dockerfile: ./ops/docker/nodejs/Dockerfile
       context: ../../
-      target: ci
+      target: base
     healthcheck:
       test: "curl -f localhost:4321 > /dev/null || exit 1"
       interval: 5s
