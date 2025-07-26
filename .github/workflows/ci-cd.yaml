@@ -83,10 +83,10 @@ jobs:
         run: make ps
         if: ${{ github.event.inputs.skip_tests != 'true' }}
 
-      # - name: Wait for containers to be ready
-      #   run: bash ./ops/scripts/wait-for-healthy-containers.sh site-nodejs-1 60 && make ps
-      #   continue-on-error: true
-      #   if: ${{ github.event.inputs.skip_tests != 'true' }}
+      - name: Wait for containers to be ready
+        run: bash ./ops/scripts/wait-for-healthy-containers.sh instant-sites-nodejs-1 60 && make ps
+        continue-on-error: true
+        if: ${{ github.event.inputs.skip_tests != 'true' }}
 
       - name: Process list after wait
         run: make ps
