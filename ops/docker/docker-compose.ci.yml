@@ -4,6 +4,9 @@ services:
       dockerfile: ./ops/docker/nodejs/Dockerfile
       context: ../../
       target: base
+      args:
+        DOCKER_USER_ID: ${userId}
+        DOCKER_GROUP_ID: ${groupId}
     healthcheck:
       test: "curl -f localhost:4321 > /dev/null || exit 1"
       interval: 5s
