@@ -1,4 +1,5 @@
 ---
+import DatadogTracker from "@/components/Datadog";
 import "../styles/global.css";
 ---
 
@@ -12,6 +13,7 @@ import "../styles/global.css";
 		<title>Astro Basics</title>
 	</head>
 	<body>
+		<DatadogTracker client:load />
 		<slot />
 	</body>
 </html>
