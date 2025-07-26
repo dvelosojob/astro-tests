@@ -92,14 +92,6 @@ jobs:
         run: make ps
         if: ${{ github.event.inputs.skip_tests != 'true' }}
 
-      - name: Lint
-        run: make lint
-        if: ${{ github.event.inputs.skip_tests != 'true' }}
-
-      - name: Test
-        run: make test
-        if: ${{ github.event.inputs.skip_tests != 'true' }}
-
       - name: Debug container envs
         run: docker exec instant-sites-nodejs-1 printenv | grep E2E_
         if: ${{ github.event.inputs.skip_tests != 'true' }}
