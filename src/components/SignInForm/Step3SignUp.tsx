@@ -65,6 +65,7 @@ const Step3SignUp: React.FC = () => {
           {...register("email")}
           placeholder="Enter your email"
           type="email"
+          id="email"
         />
         {errors.email?.message ? (
           <p className="text-red-800">{errors.email?.message?.toString()}</p>
@@ -82,6 +83,7 @@ const Step3SignUp: React.FC = () => {
           type="password"
           {...register("password")}
           placeholder="Enter your password"
+          id="password"
         />
         {errors.password?.message ? (
           <p className="text-red-800">{errors.password?.message?.toString()}</p>

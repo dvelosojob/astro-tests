@@ -23,7 +23,12 @@ const Step1UserExists: React.FC = () => {
     try {
       updateState("error", "");
       updateState("isLoading", true);
-      const isUserExists = await checkIfUserExists(data.email);
+      const isUserExists = await checkIfUserExists(data.email).catch((err) => {
+        console.error(err);
+        return false;
+      });
+      console.log("isUserExists=====>", isUserExists);
+
       if (isUserExists) {
         updateState("step", Step.Step2SignIn);
       } else {
@@ -53,6 +58,7 @@ const Step1UserExists: React.FC = () => {
         </label>
         <input
           {...register("email")}
+          id="email"
           placeholder="Enter your email"
           type="email"
           className="w-full"

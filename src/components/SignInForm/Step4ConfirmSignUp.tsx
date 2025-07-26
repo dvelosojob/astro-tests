@@ -79,6 +79,7 @@ const Step4ConfirmSignUp: React.FC = () => {
           type="email"
           {...register("email")}
           placeholder="Enter your email"
+          id="email"
         />
         {errors.email?.message ? (
           <p className="text-red-800">{errors.email?.message?.toString()}</p>
@@ -95,6 +96,7 @@ const Step4ConfirmSignUp: React.FC = () => {
         <input
           {...register("otp")}
           placeholder="Enter your verification code"
+          id="otp"
         />
         {errors.otp?.message ? (
           <p className="text-red-800">{errors.otp?.message?.toString()}</p>

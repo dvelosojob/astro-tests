@@ -100,6 +100,7 @@ const Step2SignIn: React.FC = () => {
           placeholder="Enter your email"
           readOnly={!!email}
           disabled={!!email}
+          id="email"
         />
         {errors.email?.message ? (
           <p className="text-red-800">{errors.email?.message?.toString()}</p>
@@ -116,6 +117,7 @@ const Step2SignIn: React.FC = () => {
         <input
           {...register("otp")}
           placeholder="Enter your authentication code"
+          id="otp"
         />
 
         {errors.otp?.message ? (
