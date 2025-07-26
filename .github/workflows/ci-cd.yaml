@@ -88,14 +88,6 @@ jobs:
         continue-on-error: true
         if: ${{ github.event.inputs.skip_tests != 'true' }}
 
-      - name: Process list after wait
-        run: make ps
-        if: ${{ github.event.inputs.skip_tests != 'true' }}
-
-      - name: Debug container envs
-        run: docker exec instant-sites-nodejs-1 printenv | grep E2E_
-        if: ${{ github.event.inputs.skip_tests != 'true' }}
-
       - name: Run Playwright tests inside container
         run: docker exec instant-sites-nodejs-1 npx playwright test --project=chromium --reporter=line
         if: ${{ github.event.inputs.skip_tests != 'true' }}
