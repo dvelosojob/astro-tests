@@ -1,137 +1,155 @@
 import { test, expect, type Page } from "@playwright/test";
 
+// Declare window properties for TypeScript
+declare global {
+  interface Window {
+    mockCheckIfUserExists: () => Promise<boolean>;
+    mockInitiatePasswordlessAuth: () => Promise<any>;
+    mockRespondToEmailOtp: () => Promise<any>;
+    mockSignUp: () => Promise<any>;
+    mockConfirmSignUp: () => Promise<any>;
+    mockInitiateAuth: () => Promise<any>;
+    mockRespondToAuthChallenge: () => Promise<any>;
+  }
+}
+
 export async function mockCognitoUserExistsFlow(page: Page) {
-  await page.route(
-    "**/cognito-idp.*amazonaws.com/**",
-    async (route, request) => {
-      const target = request.headers()["x-amz-target"];
-      const body = await request.postDataJSON();
+  // Mock the AWS SDK functions by intercepting module imports
+  await page.addInitScript(() => {
+    // Mock the checkIfUserExists function to return true (user exists)
+    window.mockCheckIfUserExists = async () => true;
 
-      console.log("🔥 [Mock Cognito] Target:", target);
-      console.log("🔥 [Mock Cognito] Body:", body);
+    // Mock the initiatePasswordlessAuth function
+    window.mockInitiatePasswordlessAuth = async () => ({
+      Session: "mock-session-id",
+      $metadata: { httpStatusCode: 200 },
+    });
 
-      switch (target) {
-        // 1. ForgotPasswordCommand - User exists
-        case "AWSCognitoIdentityProviderService.ForgotPassword":
-          return route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              CodeDeliveryDetails: {
-                AttributeName: "email",
-                DeliveryMedium: "EMAIL",
-                Destination: "t***@example.com",
-              },
-            }),
-          });
+    // Mock the respondToEmailOtp function
+    window.mockRespondToEmailOtp = async () => ({
+      AuthenticationResult: {
+        IdToken: "mock-id-token",
+        AccessToken: "mock-access-token",
+        RefreshToken: "mock-refresh-token",
+      },
+      $metadata: { httpStatusCode: 200 },
+    });
+  });
 
-        // 2. InitiateAuthCommand - Start of OTP login
-        case "AWSCognitoIdentityProviderService.InitiateAuth":
-          return route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              ChallengeName: "CUSTOM_CHALLENGE",
-              Session: "mock-session-id",
-            }),
-          });
-
-        // 3. RespondToAuthChallengeCommand - Valid OTP code
-        case "AWSCognitoIdentityProviderService.RespondToAuthChallenge":
-          return route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              AuthenticationResult: {
-                AccessToken: "mock-access-token",
-                IdToken: "mock-id-token",
-                RefreshToken: "mock-refresh-token",
-              },
-            }),
-          });
-
-        default:
-          return route.continue();
-      }
-    }
-  );
+  // Intercept the cognito module and replace with mocks
+  await page.route("**/src/lib/cognito.ts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `
+        export async function checkIfUserExists() {
+          return window.mockCheckIfUserExists();
+        }
+        
+        export async function initiatePasswordlessAuth() {
+          return window.mockInitiatePasswordlessAuth();
+        }
+        
+        export async function respondToEmailOtp() {
+          return window.mockRespondToEmailOtp();
+        }
+        
+        export async function signUp() {
+          return {};
+        }
+        
+        export async function signIn() {
+          return {};
+        }
+        
+        export async function confirmUserSignUp() {
+          return {};
+        }
+      `,
+    });
+  });
 }
 
 export async function mockCognitoUserSignUpFlow(page: Page) {
-  await page.route(
-    "**/cognito-idp.*amazonaws.com/**",
-    async (route, request) => {
-      const target = request.headers()["x-amz-target"];
-      const body = await request.postDataJSON();
+  // Mock the AWS SDK functions by intercepting module imports
+  await page.addInitScript(() => {
+    // Mock the checkIfUserExists function to return false (user doesn't exist)
+    window.mockCheckIfUserExists = async () => false;
 
-      console.log("🔥 [Mock Cognito - Signup Flow] Target:", target);
-      console.log("🔥 Body:", body);
+    // Mock the signUp function
+    window.mockSignUp = async () => ({
+      UserConfirmed: false,
+      CodeDeliveryDetails: {
+        AttributeName: "email",
+        DeliveryMedium: "EMAIL",
+        Destination: "t***@example.com",
+      },
+      $metadata: { httpStatusCode: 200 },
+    });
 
-      switch (target) {
-        // 1. ForgotPasswordCommand - User does not exist
-        case "AWSCognitoIdentityProviderService.ForgotPassword":
-          return route.fulfill({
-            status: 400,
-            contentType: "application/json",
-            body: JSON.stringify({
-              __type: "UserNotFoundException",
-              message: "User does not exist",
-            }),
-          });
+    // Mock the confirmSignUp function
+    window.mockConfirmSignUp = async () => ({
+      $metadata: { httpStatusCode: 200 },
+    });
 
-        // 2. SignUpCommand - Create account with email/password
-        case "AWSCognitoIdentityProviderService.SignUp":
-          return route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              UserConfirmed: false,
-              CodeDeliveryDetails: {
-                AttributeName: "email",
-                DeliveryMedium: "EMAIL",
-                Destination: "t***@example.com",
-              },
-            }),
-          });
+    // Mock the initiateAuth function for new password required
+    window.mockInitiateAuth = async () => ({
+      ChallengeName: "NEW_PASSWORD_REQUIRED",
+      Session: "mock-session-id",
+      $metadata: { httpStatusCode: 200 },
+    });
 
-        // 3. ConfirmSignUpCommand - Verification code
-        case "AWSCognitoIdentityProviderService.ConfirmSignUp":
-          return route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({}),
-          });
+    // Mock the respondToAuthChallenge function
+    window.mockRespondToAuthChallenge = async () => ({
+      AuthenticationResult: {
+        IdToken: "mock-id-token",
+        AccessToken: "mock-access-token",
+        RefreshToken: "mock-refresh-token",
+      },
+      $metadata: { httpStatusCode: 200 },
+    });
+  });
 
-        // 4. InitiateAuthCommand - Initial login with password (can fall into NEW_PASSWORD_REQUIRED)
-        case "AWSCognitoIdentityProviderService.InitiateAuth":
-          return route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              ChallengeName: "NEW_PASSWORD_REQUIRED",
-              Session: "mock-session-id",
-            }),
-          });
-
-        // 5. RespondToAuthChallengeCommand - New password accepted, login completed
-        case "AWSCognitoIdentityProviderService.RespondToAuthChallenge":
-          return route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              AuthenticationResult: {
-                IdToken: "mock-id-token",
-                AccessToken: "mock-access-token",
-                RefreshToken: "mock-refresh-token",
-              },
-            }),
-          });
-
-        default:
-          return route.continue();
-      }
-    }
-  );
+  // Intercept the cognito module and replace with mocks
+  await page.route("**/src/lib/cognito.ts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `
+        export async function checkIfUserExists() {
+          return window.mockCheckIfUserExists();
+        }
+        
+        export async function signUp() {
+          return window.mockSignUp();
+        }
+        
+        export async function confirmUserSignUp() {
+          return window.mockConfirmSignUp();
+        }
+        
+        export async function initiateAuth() {
+          return window.mockInitiateAuth();
+        }
+        
+        export async function respondToAuthChallenge() {
+          return window.mockRespondToAuthChallenge();
+        }
+        
+        export async function initiatePasswordlessAuth() {
+          return window.mockInitiatePasswordlessAuth();
+        }
+        
+        export async function respondToEmailOtp() {
+          return window.mockRespondToEmailOtp();
+        }
+        
+        export async function signIn() {
+          return {};
+        }
+      `,
+    });
+  });
 }
 
 test("authentication flow – user exists (mocked)", async ({ page }) => {
@@ -177,9 +195,7 @@ test("authentication flow – user exists (mocked)", async ({ page }) => {
   await page.getByRole("button", { name: "Continue" }).click();
 });
 
-test.skip("authentication flow – user does not exist (mocked)", async ({
-  page,
-}) => {
+test("authentication flow – user does not exist (mocked)", async ({ page }) => {
   page.on("request", (request) => {
     console.log(`➡️  ${request.method()} ${request.url()}`);
     const postData = request.postData();
@@ -206,7 +222,7 @@ test.skip("authentication flow – user does not exist (mocked)", async ({
   const randomEmail = `user-${Date.now()}@test.com`;
   await expect(page.getByRole("heading", { name: "Checkout" })).toBeVisible();
 
-  const emailInput = page.getByRole("textbox", { name: "Enter your email" });
+  const emailInput = page.getByRole("textbox", { name: "Email" });
   const continueBtn = page.getByRole("button", { name: "Continue" });
 
   await emailInput.fill(randomEmail);
@@ -219,7 +235,7 @@ test.skip("authentication flow – user does not exist (mocked)", async ({
   ).toBeVisible();
 
   const passwordInput = page.getByRole("textbox", {
-    name: "Enter your password",
+    name: "Password",
   });
   await passwordInput.fill("Test123@");
   await page.getByRole("button", { name: "Continue" }).click();
